@@ -37,7 +37,8 @@
  .grow:hover{background:#f1f5f9}
  .grow.sel{background:#e7eef7;outline:1.5px solid #c4d4e8}
  .gname{font-weight:700;font-size:.9rem;color:var(--navy);min-width:64px}
- .adot{color:#b21f2d;font-size:.7rem}
+ .adot{font-size:.7rem} .adot.SOC{color:#127053} .adot.INV{color:#b07d00}
+ .legend{font-weight:500;color:var(--muted);font-size:.68rem;padding:0 14px 6px;display:flex;flex-wrap:wrap;gap:4px 12px;flex:0 0 auto}
  .gpct{font-size:.82rem;color:var(--ink);margin-left:auto;font-weight:600}
  .gbar{width:60px;height:6px;background:#edf1f5;border-radius:4px;overflow:hidden;flex:0 0 auto}
  .gbar > span{display:block;height:100%;background:#2c6196}
@@ -51,7 +52,8 @@
  th{text-align:left;color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.03em;padding:5px 6px;position:sticky;top:0;background:#fff}
  td{padding:6px 6px;border-top:1px solid #f0f3f7} td.num{text-align:right;font-variant-numeric:tabular-nums;width:48px;color:var(--ink)}
  .badge{font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:999px;color:#fff;white-space:nowrap}
- .badge.O{background:var(--O)} .badge.LO{background:var(--LO)} .badge.VUS{background:var(--VUS)} .badge.L12{background:var(--navy)}
+ .badge.O{background:var(--O)} .badge.LO{background:var(--LO)} .badge.VUS{background:var(--VUS)}
+ .badge.SOC{background:#127053} .badge.INV{background:#b07d00}
  .lv{font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:6px;white-space:nowrap}
  .lv.a{background:#dff3ea;color:#127053;border:1px solid #aee0cd} /* Level 1-2 */
  .lv.b{background:#fbf0d6;color:#9a6b00;border:1px solid #f0dca6} /* Level 3 */
@@ -76,13 +78,13 @@
 <div class="subbar"><span class="sublabel">Anatomic site</span><div class="pills"><button class="pill active" data-k="All" onclick="showSub('All')">All mucosal<span class="n">492</span></button><button class="pill" data-k="Anorectal" onclick="showSub('Anorectal')">Anorectal<span class="n">167</span></button><button class="pill" data-k="Vulvovaginal" onclick="showSub('Vulvovaginal')">Vulvovaginal<span class="n">154</span></button><button class="pill" data-k="HeadNeck" onclick="showSub('HeadNeck')">Head and neck<span class="n">147</span></button><button class="pill" data-k="Other" onclick="showSub('Other')">Other mucosal<span class="n">24</span></button></div></div>
 <main>
   <div class="kpis">
-    <div class="kpi"><b id="k-tmb"></b><span>TMB-high &ge;10</span></div>
+    <div class="kpi"><b id="k-tmb"></b><span>TMB-high (&gt;10 mut/Mb)</span></div>
     <div class="kpi"><b id="k-coh"></b><span>Mutation cohort</span></div>
     <div class="kpi"><b id="k-cna"></b><span>CNA-profiled</span></div>
     <button class="cnabtn" onclick="openImg('cna')">Copy-number alterations &#8689;</button>
   </div>
   <div class="work">
-    <div class="card"><div class="ch">Genes <small>by % mutated</small></div><div class="genelist" id="genelist"></div></div>
+    <div class="card"><div class="ch">Genes <small>by % mutated</small></div><div class="legend"><span><span class="adot SOC">&#9679;</span> Standard of care (OncoKB Level 1&ndash;2)</span><span><span class="adot INV">&#9679;</span> Investigational (Level 3&ndash;4)</span></div><div class="genelist" id="genelist"></div></div>
     <div class="card detail">
       <div class="dh" id="dh"></div>
       <div class="vcap" id="vcap"></div>
@@ -96,6 +98,7 @@
 <script>
  var KPI={"All":{tmb:"10.8% (53/492)",coh:492,cna:365,lab:"all mucosal melanomas"},"Anorectal":{tmb:"9.6% (16/167)",coh:167,cna:128,lab:"anorectal"},"Vulvovaginal":{tmb:"11.0% (17/154)",coh:154,cna:113,lab:"vulvovaginal"},"HeadNeck":{tmb:"11.6% (17/147)",coh:147,cna:108,lab:"head and neck"},"Other":{tmb:"12.5% (3/24)",coh:24,cna:16,lab:"other mucosal"}};
  var cur="All", curGene=null;
+ function tierLabel(t){return t=="SOC"?"Standard of care (Level 1&ndash;2)":t=="INV"?"Investigational (Level 3&ndash;4)":"";}
  function clsLabel(c){return c=="O"?"Oncogenic":c=="LO"?"Likely oncogenic":"VUS";}
  function lvlBadge(l){
    if(l==="1"||l==="2") return '<span class="lv a">Level '+l+'</span>';
@@ -116,7 +119,7 @@
    document.getElementById("genelist").innerHTML = arr.map(function(g,i){
      return '<div class="grow'+(i===0?' sel':'')+'" data-i="'+i+'" onclick="selGene('+i+')">'+
        '<span class="gname">'+g.gene+'</span>'+
-       (g.act?'<span class="adot" title="actionable OncoKB Level 1-4">&#9679;</span>':'')+
+       (g.tier?'<span class="adot '+g.tier+'" title="'+tierLabel(g.tier)+'">&#9679;</span>':'')+
        '<span class="gpct">'+g.pct+'%</span>'+
        '<span class="gbar"><span style="width:'+Math.min(100,g.pct*2)+'%"></span></span></div>';
    }).join("");
@@ -126,7 +129,7 @@
    var g=(GENEDATA[cur]||[])[i]; if(!g) return; curGene=g.gene;
    document.querySelectorAll(".grow").forEach(function(r){ r.classList.toggle("sel", r.dataset.i==i); });
    var btn = g.has_lolli ? '<button class="lolbtn" onclick="openLolliCur()">&#128300; View lollipop &#8689;</button>' : '';
-   document.getElementById("dh").innerHTML='<b>'+g.gene+'</b><span class="dsub">'+g.pct+'% of patients (n='+g.npat+')</span>'+(g.act?' <span class="badge L12">Actionable</span>':'')+btn;
+   document.getElementById("dh").innerHTML='<b>'+g.gene+'</b><span class="dsub">'+g.pct+'% of patients (n='+g.npat+')</span>'+(g.tier?' <span class="badge '+g.tier+'">'+tierLabel(g.tier)+'</span>':'')+btn;
    document.getElementById("vcap").innerHTML = g.npat+' patient(s) with '+g.gene+' mutations &middot; n = patients carrying each variant (a patient may have &gt;1, so rows can exceed the total)';
    document.getElementById("vtbody").innerHTML = (g.vars&&g.vars.length)?
      g.vars.map(function(v){return '<tr><td>'+v.aa+'</td><td class="num">'+v.n+'</td><td><span class="badge '+v.cls+'">'+clsLabel(v.cls)+'</span></td><td>'+lvlBadge(v.lvl)+'</td></tr>';}).join(""):
